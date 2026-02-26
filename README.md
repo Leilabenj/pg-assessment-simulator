@@ -1,6 +1,6 @@
 # PG Assessment Simulator
 
-A web-based cognitive assessment simulator with two timed game modes: **The Digit Challenge** (math equation fill-in-the-blank) and **The Tube Branch Challenge** (symbol reordering puzzles).
+A web-based cognitive assessment simulator with two timed game modes: **The Digit Challenge** (math equation fill-in-the-blank) and **The Tube Branch Challenge** (symbol reordering puzzles). These simulate the [Interactive Assessments](https://www.pgcareers.com/global/en/interactive-assessments) used by Procter & Gamble during their hiring process.
 
 ## Features
 
@@ -40,6 +40,8 @@ npm run generate:branch # Tube Branch challenges
 ```
 
 ## Game Modes
+
+These modes are based on P&G’s [Interactive Assessments](https://www.pgcareers.com/global/en/interactive-assessments) (Assessment #1: equation solving, Assessment #2: tube branch logic).
 
 ### The Digit Challenge
 
