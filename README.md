@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PG Assessment Simulator
+
+A web-based cognitive assessment simulator with two timed game modes: **The Digit Challenge** (math equation fill-in-the-blank) and **The Tube Branch Challenge** (symbol reordering puzzles).
+
+## Features
+
+- **Digit Challenge** — Fill blanks in equations using digits 1–9. Progressive difficulty across 4 levels. Digits shown in the formula cannot be reused. Each digit used at most once per formula.
+- **Tube Branch Challenge** — Deduce which tube branch or combination reordered a sequence of symbols.
+- 5-minute timed sessions with level-based progression and score tracking.
+- Pre-generated challenge banks with template pools; regenerates fresh puzzles on demand.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Regenerating Challenges
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run generate        # Digit Challenge (formula) puzzles
+npm run generate:branch # Tube Branch challenges
+```
 
-## Learn More
+## Game Modes
 
-To learn more about Next.js, take a look at the following resources:
+### The Digit Challenge
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Fill in the blanks in math equations using digits 1–9. Each session is 5 minutes.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Level progression** (cumulative correct answers):
 
-## Deploy on Vercel
+| Score   | Level |
+|---------|-------|
+| 0–7     | Level 1 — Simple multiplication |
+| 8–14    | Level 2 — Mult with add/sub |
+| 15–20   | Level 3 — Two blanks, mult + div |
+| 21+     | Level 4 — Three blanks, product and division |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Rules:** Digits already shown on the left side of the equation cannot be used. Each digit may appear only once per formula. No zero allowed.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### The Tube Branch Challenge
+
+Symbols pass through “tube branches” that reorder them. Identify which branch or combination produced the output.
+
+- **Level 1** — Pick the branch that maps input → output
+- **Level 2** — Two branches in series; one known, deduce the other
+- **Level 3** — Both branches known; predict the output
+- **Level 4** — Input and output known; find the correct branch pair
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org) 16 · React 19 · TypeScript · Tailwind CSS v4
