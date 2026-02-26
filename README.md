@@ -11,12 +11,26 @@ A web-based cognitive assessment simulator with two timed game modes: **The Digi
 
 ## Getting Started
 
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/Leilabenj/pg-assessment-simulator.git
+cd pg-assessment-simulator
+```
+
+2. **Install dependencies**
+
 ```bash
 npm install
+```
+
+3. **Start the dev server**
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+4. **Open the app** in your browser at [http://localhost:3000](http://localhost:3000).
 
 ## Regenerating Challenges
 
