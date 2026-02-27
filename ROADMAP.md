@@ -6,33 +6,33 @@
 ---
 
 ## Week 1: The "Architect" Phase
-*Goal: Move from local state to persistent, authenticated data systems.*
+*Goal: Move from local state to persistent data systems. Sign-in is optional; the app is fully usable without an account.*
 
-### Day 1: The TypeScript & State Core (Completed/Polish)
+### Day 1: The TypeScript & State Core (Completed)
 - **Focus:** Refine existing Digit & Tube logic.
 - **Tasks:**
     - [-] Finalize `validate()` functions for edge cases.
     - [-] Implement "Keypad Lock" logic based on expression constants.
     - [-] Ensure 100% Type safety across `challenge-types.ts`.
 
-### Day 2: Infrastructure & Database (The SDE Jump)
+### Day 2: Infrastructure & Database (The SDE Jump) (Completed)
 - **Focus:** PostgreSQL & Prisma Setup.
 - **Tasks:**
-    - [ ] Provision a **PostgreSQL** instance (Neon.tech or Supabase).
-    - [ ] Initialize **Prisma** and define `User` and `Session` models.
-    - [ ] Create a `db.ts` singleton for server-side connections.
+    - [-] Provision a **PostgreSQL** instance (Neon.tech or Supabase).
+    - [-] Initialize **Prisma** and define `User` and `Session` models.
+    - [-] Create a `db.ts` singleton for server-side connections.
 
-### Day 3: Authentication & User Identity
-- **Focus:** Clerk Integration.
+### Day 3: Optional Authentication & User Identity
+- **Focus:** Clerk integration for users who choose to sign in. The app remains fully playable without an account.
 - **Tasks:**
-    - [ ] Install and configure **Clerk SDK** for Next.js.
-    - [ ] Protect `/dashboard` and `/api` routes with middleware.
-    - [ ] Sync Clerk `User` metadata with your PostgreSQL `User` record.
+    - [ ] Install and configure **Clerk SDK** for Next.js (sign-in optional; no gate on main app).
+    - [ ] Protect only **`/dashboard`** (and any private API routes) with middleware; keep main app and game APIs public.
+    - [ ] Sync Clerk `User` metadata with your PostgreSQL `User` record when a user signs in (webhook or on first authenticated request).
 
 ### Day 4: Persistence Layer (API Design)
 - **Focus:** Server Actions & Data Flow.
 - **Tasks:**
-    - [ ] Build a Next.js **Server Action** to save session results post-timer.
+    - [ ] Build a Next.js **Server Action** to save session results post-timer (anonymous: `userId` null; signed-in: link to `User`).
     - [ ] Implement robust error handling (Try/Catch) for DB writes.
     - [ ] Add a "Loading" state for post-game data submission.
 
