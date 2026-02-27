@@ -34,10 +34,11 @@ function shuffle<T>(arr: T[]): T[] {
  * Progression: L2 at 8 total correct, L3 at 15, L4 at 21, then L4 until timeout.
  */
 export function buildLevelDecks(): Record<Level, Challenge[]> {
-  const decks = {} as Record<Level, Challenge[]>;
-  for (const level of LEVEL_ORDER) {
-    const levelChallenges = CHALLENGE_BANK[level] ?? [];
-    decks[level] = shuffle(levelChallenges);
-  }
+  const decks: Record<Level, Challenge[]> = {
+    1: shuffle(CHALLENGE_BANK[1] ?? []),
+    2: shuffle(CHALLENGE_BANK[2] ?? []),
+    3: shuffle(CHALLENGE_BANK[3] ?? []),
+    4: shuffle(CHALLENGE_BANK[4] ?? []),
+  };
   return decks;
 }
