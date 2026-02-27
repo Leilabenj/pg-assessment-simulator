@@ -229,7 +229,7 @@ export default function DigitChallenge() {
               {(() => {
                 const forbiddenDigits = getPureDigitsInFormula(currentFormulaChallenge.formula);
                 return [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
-                  const isDisabled = forbiddenDigits.has(n);
+                  const isDisabled = forbiddenDigits.has(n) || currentInput.includes(n);
                   return (
                     <button
                       key={n}
