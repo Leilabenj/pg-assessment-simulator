@@ -1,3 +1,5 @@
+import type { Level } from './challenge-utils';
+
 export type ChallengeWithSource = {
   formula: string;
   validateSource: string;
@@ -37,7 +39,7 @@ function solutionViolatesRule(constants: number[], solutionDigits: number[]): bo
 }
 
 export type LevelTemplatePool = {
-  level: number;
+  level: Level;
   generators: GeneratorFn[];
 };
 

@@ -11,9 +11,9 @@
 ### Day 1: The TypeScript & State Core (Completed/Polish)
 - **Focus:** Refine existing Digit & Tube logic.
 - **Tasks:**
-    - [ ] Finalize `validate()` functions for edge cases.
-    - [ ] Implement "Keypad Lock" logic based on expression constants.
-    - [ ] Ensure 100% Type safety across `challenge-types.ts`.
+    - [-] Finalize `validate()` functions for edge cases.
+    - [-] Implement "Keypad Lock" logic based on expression constants.
+    - [-] Ensure 100% Type safety across `challenge-types.ts`.
 
 ### Day 2: Infrastructure & Database (The SDE Jump)
 - **Focus:** PostgreSQL & Prisma Setup.
