@@ -1,17 +1,18 @@
 import type { Challenge } from './challenge-types';
 import { CHALLENGE_BANK } from './challenges.generated';
 
-export const LEVEL_ORDER = [1, 2, 3, 4] as const;
+export const LEVEL_ORDER = [1, 2, 3, 4, 5] as const;
 export type Level = (typeof LEVEL_ORDER)[number];
 
-/** Cumulative score at which each level starts. L2 at 8, L3 at 15, L4 at 21. */
-export const CUMULATIVE_THRESHOLDS = [0, 8, 15, 21] as const;
+/** Cumulative score at which each level starts. L2 at 2, L3 at 3, L4 at 5, L5 at 10. */
+export const CUMULATIVE_THRESHOLDS = [0, 2, 3, 5, 10] as const;
 
 export function getLevelForScore(score: number): Level {
-  if (score < 8) return 1;
-  if (score < 15) return 2;
-  if (score < 21) return 3;
-  return 4;
+  if (score < 2) return 1;
+  if (score < 3) return 2;
+  if (score < 5) return 3;
+  if (score < 10) return 4;
+  return 5;
 }
 
 /** Index of the challenge within the current level (0-based). */
@@ -31,7 +32,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 /**
  * Builds per-level decks: one shuffled array per level from CHALLENGE_BANK.
- * Progression: L2 at 8 total correct, L3 at 15, L4 at 21, then L4 until timeout.
+ * Progression: L2 at 2, L3 at 3, L4 at 5, L5 at 10.
  */
 export function buildLevelDecks(): Record<Level, Challenge[]> {
   const decks: Record<Level, Challenge[]> = {
@@ -39,6 +40,7 @@ export function buildLevelDecks(): Record<Level, Challenge[]> {
     2: shuffle(CHALLENGE_BANK[2] ?? []),
     3: shuffle(CHALLENGE_BANK[3] ?? []),
     4: shuffle(CHALLENGE_BANK[4] ?? []),
+    5: shuffle(CHALLENGE_BANK[5] ?? []),
   };
   return decks;
 }

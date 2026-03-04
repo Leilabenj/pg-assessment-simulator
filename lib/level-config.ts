@@ -97,6 +97,32 @@ const genMultAdd: GeneratorFn = () => {
   };
 };
 
+const genSumThree: GeneratorFn = () => {
+  const a = randInt(1, 9);
+  const b = randInt(1, 9);
+  const c = randInt(1, 9);
+  const y = a + b + c;
+  if (!inRange(y, 6, 24)) return null;
+  if (solutionViolatesRule([], [a, b, c])) return null;
+  return {
+    formula: `( ) + ( ) + ( ) = ${y}`,
+    validateSource: `(i) => i[0] + i[1] + i[2] === ${y}`,
+  };
+};
+
+const genMinusPlus: GeneratorFn = () => {
+  const a = randInt(1, 9);
+  const b = randInt(1, 9);
+  const c = randInt(1, 9);
+  const y = a - b + c;
+  if (!inRange(y, 1, 17)) return null;
+  if (solutionViolatesRule([], [a, b, c])) return null;
+  return {
+    formula: `( ) - ( ) + ( ) = ${y}`,
+    validateSource: `(i) => i[0] - i[1] + i[2] === ${y}`,
+  };
+};
+
 // --- Level 3: Mult + div ---
 const genMultAddTwo: GeneratorFn = () => {
   const x = randInt(2, 9);
@@ -150,6 +176,20 @@ const genDivAdd: GeneratorFn = () => {
   return {
     formula: `( ) / ${x} + ( ) = ${y}`,
     validateSource: `(i) => i[0] % ${x} === 0 && i[0] / ${x} + i[1] === ${y}`,
+  };
+};
+
+const genPlusMinusPlus: GeneratorFn = () => {
+  const a = randInt(1, 9);
+  const b = randInt(1, 9);
+  const c = randInt(1, 9);
+  const d = randInt(1, 9);
+  const y = a + b - c + d;
+  if (!inRange(y, 1, 25)) return null;
+  if (solutionViolatesRule([], [a, b, c, d])) return null;
+  return {
+    formula: `( ) + ( ) - ( ) + ( ) = ${y}`,
+    validateSource: `(i) => i[0] + i[1] - i[2] + i[3] === ${y}`,
   };
 };
 
@@ -207,11 +247,56 @@ const genProductDivSub: GeneratorFn = () => {
   return null;
 };
 
+// --- Level 5: Triple product, triple product ± one ---
+const genTripleProduct: GeneratorFn = () => {
+  const a = randInt(2, 9);
+  const b = randInt(2, 9);
+  const c = randInt(2, 9);
+  const y = a * b * c;
+  if (!inRange(y, 8, 729)) return null;
+  if (solutionViolatesRule([], [a, b, c])) return null;
+  return {
+    formula: `( ) * ( ) * ( ) = ${y}`,
+    validateSource: `(i) => i[0] * i[1] * i[2] === ${y}`,
+  };
+};
+
+const genTripleProductMinus: GeneratorFn = () => {
+  const a = randInt(2, 9);
+  const b = randInt(2, 9);
+  const c = randInt(2, 9);
+  const product = a * b * c;
+  if (product <= 1) return null;
+  const d = randInt(1, Math.min(9, product - 1));
+  const y = product - d;
+  if (y > 500) return null;
+  if (solutionViolatesRule([], [a, b, c, d])) return null;
+  return {
+    formula: `( ( ) * ( ) * ( ) ) - ( ) = ${y}`,
+    validateSource: `(i) => i[0] * i[1] * i[2] - i[3] === ${y}`,
+  };
+};
+
+const genTripleProductPlus: GeneratorFn = () => {
+  const a = randInt(2, 9);
+  const b = randInt(2, 9);
+  const c = randInt(2, 9);
+  const d = randInt(1, 9);
+  const y = a * b * c + d;
+  if (y > 600) return null;
+  if (solutionViolatesRule([], [a, b, c, d])) return null;
+  return {
+    formula: `( ( ) * ( ) * ( ) ) + ( ) = ${y}`,
+    validateSource: `(i) => i[0] * i[1] * i[2] + i[3] === ${y}`,
+  };
+};
+
 export const LEVEL_POOLS: LevelTemplatePool[] = [
   { level: 1, generators: [genMultBlankFirst, genMultBlankSecond] },
-  { level: 2, generators: [genMultOnly, genSubMult, genMultAdd] },
-  { level: 3, generators: [genMultAddTwo, genMultSub, genMultDiv, genDivAdd] },
+  { level: 2, generators: [genMultOnly, genSubMult, genMultAdd, genSumThree, genMinusPlus] },
+  { level: 3, generators: [genMultAddTwo, genMultSub, genMultDiv, genDivAdd, genPlusMinusPlus] },
   { level: 4, generators: [genProductSub, genProductDiv, genProductDivSub] },
+  { level: 5, generators: [genTripleProduct, genTripleProductMinus, genTripleProductPlus] },
 ];
 
 export { pickRandom };
