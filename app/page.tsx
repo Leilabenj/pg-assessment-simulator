@@ -38,8 +38,13 @@ export default function DigitChallenge() {
   const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
   const [status, setStatus] = useState<'START' | 'PLAY' | 'END'>('START');
   const scoreRef = useRef(score);
+  const currentInputRef = useRef<number[]>(currentInput);
   const failTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   scoreRef.current = score;
+
+  useEffect(() => {
+    currentInputRef.current = currentInput;
+  }, [currentInput]);
 
   useEffect(() => {
     return () => {
@@ -62,34 +67,45 @@ export default function DigitChallenge() {
       clearTimeout(failTimeoutRef.current);
       failTimeoutRef.current = null;
     }
-    setCurrentInput(prev => {
-      const newInput = [...prev, num];
-      const s = scoreRef.current;
-      const level = getLevelForScore(s);
-      const idx = getIndexInLevel(s);
-      const deck = levelDecks[level];
-      const challenge = deck?.[idx % deck.length];
-      if (!challenge) return newInput;
-      const placeholderCount = getPlaceholderCount(challenge.formula);
-      if (newInput.length === placeholderCount) {
-        if (isCorrectFormula(challenge, newInput)) {
-          setScore(s => s + 1);
-          return [];
-        } else {
-          failTimeoutRef.current = setTimeout(() => {
-            failTimeoutRef.current = null;
-            setCurrentInput([]);
-          }, 300);
-          return newInput;
-        }
-      }
-      return newInput;
-    });
+    const nextInput = [...currentInputRef.current, num];
+    const s = scoreRef.current;
+    const level = getLevelForScore(s);
+    const idx = getIndexInLevel(s);
+    const deck = levelDecks[level];
+    const challenge = deck?.[idx % deck.length];
+    if (!challenge) {
+      currentInputRef.current = nextInput;
+      setCurrentInput(nextInput);
+      return;
+    }
+    const placeholderCount = getPlaceholderCount(challenge.formula);
+    if (nextInput.length < placeholderCount) {
+      currentInputRef.current = nextInput;
+      setCurrentInput(nextInput);
+      return;
+    }
+    if (isCorrectFormula(challenge, nextInput)) {
+      setScore(prevScore => prevScore + 1);
+      currentInputRef.current = [];
+      setCurrentInput([]);
+      return;
+    }
+    currentInputRef.current = nextInput;
+    setCurrentInput(nextInput);
+    failTimeoutRef.current = setTimeout(() => {
+      failTimeoutRef.current = null;
+      currentInputRef.current = [];
+      setCurrentInput([]);
+    }, 300);
   };
 
   const handleBackspace = () => {
     if (status !== 'PLAY') return;
-    setCurrentInput(prev => (prev.length > 0 ? prev.slice(0, -1) : prev));
+    const prev = currentInputRef.current;
+    if (prev.length === 0) return;
+    const next = prev.slice(0, -1);
+    currentInputRef.current = next;
+    setCurrentInput(next);
   };
 
   const handleRetry = () => {
@@ -102,6 +118,7 @@ export default function DigitChallenge() {
     setBranchDeck(null);
     setTimeLeft(300);
     setScore(0);
+    currentInputRef.current = [];
     setCurrentInput([]);
     setSelectedBranch(null);
     setStatus('START');
@@ -134,7 +151,7 @@ export default function DigitChallenge() {
     const challenge = deck?.[indexInBranchLevel % deck.length];
     if (!challenge) return;
     if (challenge.validate([selectedBranch])) {
-      setScore(s + 1);
+      setScore(prevScore => prevScore + 1);
       setSelectedBranch(null);
     } else {
       failTimeoutRef.current = setTimeout(() => {
@@ -249,7 +266,13 @@ export default function DigitChallenge() {
               <button onClick={handleBackspace} className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-2xl font-bold active:scale-95 transition-all" title="Remove last digit">
                 ⌫
               </button>
-              <button onClick={() => setCurrentInput([])} className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider">
+              <button
+                onClick={() => {
+                  currentInputRef.current = [];
+                  setCurrentInput([]);
+                }}
+                className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider"
+              >
                 Clear
               </button>
               <button onClick={handleRetry} className="py-3 text-slate-400 hover:text-white uppercase text-sm tracking-widest">
