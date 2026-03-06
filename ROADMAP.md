@@ -26,8 +26,7 @@
 - **Focus:** Clerk integration for users who choose to sign in. The app remains fully playable without an account.
 - **Tasks:**
     - [ ] Install and configure **Clerk SDK** for Next.js (sign-in optional; no gate on main app).
-    - [ ] Protect only **`/dashboard`** (and any private API routes) with middleware; keep main app and game APIs public.
-    - [ ] Sync Clerk `User` metadata with your PostgreSQL `User` record when a user signs in (webhook or on first authenticated request).
+    - [ ] Sync Clerk `User` metadata with your PostgreSQL `User` record when a user signs in --> UPSERT for now == lib/auth.ts helper file containing callable getOrCreateUser()
 
 ### Day 4: Persistence Layer (API Design)
 - **Focus:** Server Actions & Data Flow.
@@ -51,6 +50,8 @@
     - [ ] Plug Grid results into the existing `Session` database schema.
 
 ---
+
+# + See where to incorporate webhooks implementation 
 
 ## 📅 Week 2: The "DevOps & Polish" Phase
 *Goal: Production stability, automated testing, and career branding.*
