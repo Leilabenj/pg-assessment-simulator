@@ -22,8 +22,7 @@ const HAS_FORMULA_CHALLENGES = LEVEL_ORDER.some((l) => (CHALLENGE_BANK[l]?.lengt
 const HAS_BRANCH_CHALLENGES =
   (BRANCH_CHALLENGE_BANK[1]?.length ?? 0) > 0 ||
   (BRANCH_CHALLENGE_BANK[2]?.length ?? 0) > 0 ||
-  (BRANCH_CHALLENGE_BANK[3]?.length ?? 0) > 0 ||
-  (BRANCH_CHALLENGE_BANK[4]?.length ?? 0) > 0;
+  (BRANCH_CHALLENGE_BANK[3]?.length ?? 0) > 0;
 const HAS_CHALLENGES = HAS_FORMULA_CHALLENGES || HAS_BRANCH_CHALLENGES;
 
 type GameMode = 'formula' | 'branch' | null;
@@ -31,20 +30,17 @@ type GameMode = 'formula' | 'branch' | null;
 export default function DigitChallenge() {
   const [mode, setMode] = useState<GameMode>(null);
   const [levelDecks, setLevelDecks] = useState<Record<Level, Challenge[]> | null>(null);
-  const [branchDeck, setBranchDeck] = useState<Record<1 | 2 | 3 | 4, BranchChallenge[]> | null>(null);
+  const [branchDeck, setBranchDeck] = useState<Record<1 | 2 | 3, BranchChallenge[]> | null>(null);
   const [timeLeft, setTimeLeft] = useState(300);
   const [score, setScore] = useState(0);
   const [currentInput, setCurrentInput] = useState<number[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
+  const [selectedBranchB, setSelectedBranchB] = useState<number | null>(null);
   const [status, setStatus] = useState<'START' | 'PLAY' | 'END'>('START');
   const scoreRef = useRef(score);
-  const currentInputRef = useRef<number[]>(currentInput);
   const failTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastScoredKeyRef = useRef<string | null>(null);
   scoreRef.current = score;
-
-  useEffect(() => {
-    currentInputRef.current = currentInput;
-  }, [currentInput]);
 
   useEffect(() => {
     return () => {
@@ -67,45 +63,38 @@ export default function DigitChallenge() {
       clearTimeout(failTimeoutRef.current);
       failTimeoutRef.current = null;
     }
-    const nextInput = [...currentInputRef.current, num];
-    const s = scoreRef.current;
-    const level = getLevelForScore(s);
-    const idx = getIndexInLevel(s);
-    const deck = levelDecks[level];
-    const challenge = deck?.[idx % deck.length];
-    if (!challenge) {
-      currentInputRef.current = nextInput;
-      setCurrentInput(nextInput);
-      return;
-    }
-    const placeholderCount = getPlaceholderCount(challenge.formula);
-    if (nextInput.length < placeholderCount) {
-      currentInputRef.current = nextInput;
-      setCurrentInput(nextInput);
-      return;
-    }
-    if (isCorrectFormula(challenge, nextInput)) {
-      setScore(prevScore => prevScore + 1);
-      currentInputRef.current = [];
-      setCurrentInput([]);
-      return;
-    }
-    currentInputRef.current = nextInput;
-    setCurrentInput(nextInput);
-    failTimeoutRef.current = setTimeout(() => {
-      failTimeoutRef.current = null;
-      currentInputRef.current = [];
-      setCurrentInput([]);
-    }, 300);
+    setCurrentInput(prev => {
+      const newInput = [...prev, num];
+      const s = scoreRef.current;
+      const level = getLevelForScore(s);
+      const idx = getIndexInLevel(s);
+      const deck = levelDecks[level];
+      const challenge = deck?.[idx % deck.length];
+      if (!challenge) return newInput;
+      const placeholderCount = getPlaceholderCount(challenge.formula);
+      if (newInput.length === placeholderCount) {
+        if (isCorrectFormula(challenge, newInput)) {
+          const scoreKey = `${s}-${newInput.join(',')}`;
+          if (lastScoredKeyRef.current !== scoreKey) {
+            lastScoredKeyRef.current = scoreKey;
+            setScore(s => s + 1);
+          }
+          return [];
+        } else {
+          failTimeoutRef.current = setTimeout(() => {
+            failTimeoutRef.current = null;
+            setCurrentInput([]);
+          }, 300);
+          return newInput;
+        }
+      }
+      return newInput;
+    });
   };
 
   const handleBackspace = () => {
     if (status !== 'PLAY') return;
-    const prev = currentInputRef.current;
-    if (prev.length === 0) return;
-    const next = prev.slice(0, -1);
-    currentInputRef.current = next;
-    setCurrentInput(next);
+    setCurrentInput(prev => (prev.length > 0 ? prev.slice(0, -1) : prev));
   };
 
   const handleRetry = () => {
@@ -113,14 +102,15 @@ export default function DigitChallenge() {
       clearTimeout(failTimeoutRef.current);
       failTimeoutRef.current = null;
     }
+    lastScoredKeyRef.current = null;
     setMode(null);
     setLevelDecks(null);
     setBranchDeck(null);
     setTimeLeft(300);
     setScore(0);
-    currentInputRef.current = [];
     setCurrentInput([]);
     setSelectedBranch(null);
+    setSelectedBranchB(null);
     setStatus('START');
   };
 
@@ -139,7 +129,7 @@ export default function DigitChallenge() {
   };
 
   const handleUnlockBranch = () => {
-    if (status !== 'PLAY' || mode !== 'branch' || !branchDeck || selectedBranch === null) return;
+    if (status !== 'PLAY' || mode !== 'branch' || !branchDeck) return;
     if (failTimeoutRef.current) {
       clearTimeout(failTimeoutRef.current);
       failTimeoutRef.current = null;
@@ -150,13 +140,19 @@ export default function DigitChallenge() {
     const deck = branchDeck[branchLevel];
     const challenge = deck?.[indexInBranchLevel % deck.length];
     if (!challenge) return;
-    if (challenge.validate([selectedBranch])) {
-      setScore(prevScore => prevScore + 1);
+    const isLevel4 = challenge.level === 4;
+    if (isLevel4 && (selectedBranch === null || selectedBranchB === null)) return;
+    if (!isLevel4 && selectedBranch === null) return;
+    const validateInputs = isLevel4 ? [selectedBranch!, selectedBranchB!] : [selectedBranch!];
+    if (challenge.validate(validateInputs)) {
+      setScore(s + 1);
       setSelectedBranch(null);
+      setSelectedBranchB(null);
     } else {
       failTimeoutRef.current = setTimeout(() => {
         failTimeoutRef.current = null;
         setSelectedBranch(null);
+        setSelectedBranchB(null);
       }, 300);
     }
   };
@@ -266,13 +262,7 @@ export default function DigitChallenge() {
               <button onClick={handleBackspace} className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-2xl font-bold active:scale-95 transition-all" title="Remove last digit">
                 ⌫
               </button>
-              <button
-                onClick={() => {
-                  currentInputRef.current = [];
-                  setCurrentInput([]);
-                }}
-                className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider"
-              >
+              <button onClick={() => setCurrentInput([])} className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider">
                 Clear
               </button>
               <button onClick={handleRetry} className="py-3 text-slate-400 hover:text-white uppercase text-sm tracking-widest">
@@ -288,6 +278,8 @@ export default function DigitChallenge() {
               challenge={currentBranchChallenge}
               selectedBranch={selectedBranch}
               onSelectBranch={setSelectedBranch}
+              selectedBranchB={selectedBranchB}
+              onSelectBranchB={setSelectedBranchB}
               onUnlock={handleUnlockBranch}
             />
             <div className="mt-6 flex justify-center">

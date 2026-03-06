@@ -16,29 +16,24 @@ export type BranchChallengeLevel2 = {
   validate: (inputs: number[]) => boolean;
 };
 
-/** Level 3: Two branches known - predict output from 3 candidate arrangements */
+/** Level 3: Three branches in series - 2 known, find the unknown branch from 3 candidates */
 export type BranchChallengeLevel3 = {
   level: 3;
-  branchA: string;
-  branchB: string;
-  candidateOutputs: [
-    [number, number, number, number],
-    [number, number, number, number],
-    [number, number, number, number],
-  ];
-  correctOutputIndex: 0 | 1 | 2;
+  branchA: string | null;
+  branchB: string | null;
+  branchC: string | null;
+  candidateBranches: [string, string, string];
+  correctCandidateIndex: 0 | 1 | 2;
   validate: (inputs: number[]) => boolean;
 };
 
-/** Level 4: Input and Output known - find correct pair (A, B) from 3 candidate pairs */
+/** Level 4: Two branches in series, both unknown - pick A and B independently; combination must produce output */
 export type BranchChallengeLevel4 = {
   level: 4;
-  candidatePairs: [
-    [string, string],
-    [string, string],
-    [string, string],
-  ];
-  correctPairIndex: 0 | 1 | 2;
+  candidateBranchesA: [string, string, string];
+  candidateBranchesB: [string, string, string];
+  correctAIndex: 0 | 1 | 2;
+  correctBIndex: 0 | 1 | 2;
   validate: (inputs: number[]) => boolean;
 };
 
