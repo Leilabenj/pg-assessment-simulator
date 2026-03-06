@@ -22,16 +22,16 @@
     - [-] Initialize **Prisma** and define `User` and `Session` models.
     - [-] Create a `db.ts` singleton for server-side connections.
 
-### Day 3: Optional Authentication & User Identity
+### Day 3: Optional Authentication & User Identity (Completed)
 - **Focus:** Clerk integration for users who choose to sign in. The app remains fully playable without an account.
 - **Tasks:**
-    - [ ] Install and configure **Clerk SDK** for Next.js (sign-in optional; no gate on main app).
-    - [ ] Sync Clerk `User` metadata with your PostgreSQL `User` record when a user signs in --> UPSERT for now == lib/auth.ts helper file containing callable getOrCreateUser()
+    - [-] Install and configure **Clerk SDK** for Next.js (sign-in optional; no gate on main app).
+    - [-] Sync Clerk `User` metadata with your PostgreSQL `User` record when a user signs in --> UPSERT for now == lib/auth.ts helper file containing callable getOrCreateUser()
 
 ### Day 4: Persistence Layer (API Design)
 - **Focus:** Server Actions & Data Flow.
 - **Tasks:**
-    - [ ] Build a Next.js **Server Action** to save session results post-timer (anonymous: `userId` null; signed-in: link to `User`).
+    - [-] Build a Next.js **Server Action** to save session results post-timer (anonymous: `userId` null; signed-in: link to `User`).
     - [ ] Implement robust error handling (Try/Catch) for DB writes.
     - [ ] Add a "Loading" state for post-game data submission.
 

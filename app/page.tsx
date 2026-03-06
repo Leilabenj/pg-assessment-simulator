@@ -17,6 +17,7 @@ import {
   BRANCH_LEVEL_ORDER,
 } from '@/lib/branch-challenge-utils';
 import { BranchChallengeView } from '@/app/components/BranchChallengeView';
+import { saveSession } from '@/app/actions/save-session';
 
 const HAS_FORMULA_CHALLENGES = LEVEL_ORDER.some((l) => (CHALLENGE_BANK[l]?.length ?? 0) > 0);
 const HAS_BRANCH_CHALLENGES =
@@ -40,6 +41,7 @@ export default function DigitChallenge() {
   const scoreRef = useRef(score);
   const failTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScoredKeyRef = useRef<string | null>(null);
+  const hasSavedRef = useRef(false);
   scoreRef.current = score;
 
   useEffect(() => {
@@ -53,9 +55,18 @@ export default function DigitChallenge() {
       const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
       return () => clearInterval(timer);
     } else if (status === 'PLAY' && timeLeft === 0) {
+      if (!hasSavedRef.current && mode) {
+        hasSavedRef.current = true;
+        saveSession({
+          mode,
+          score,
+          levelReached: mode === 'formula' ? getLevelForScore(score) : getBranchLevelForScore(score),
+          durationSeconds: 300,
+        }).catch(console.error);
+      }
       setStatus('END');
     }
-  }, [status, timeLeft]);
+  }, [status, timeLeft, mode, score]);
 
   const handleKey = (num: number) => {
     if (status !== 'PLAY' || mode !== 'formula' || !levelDecks) return;
@@ -103,6 +114,7 @@ export default function DigitChallenge() {
       failTimeoutRef.current = null;
     }
     lastScoredKeyRef.current = null;
+    hasSavedRef.current = false;
     setMode(null);
     setLevelDecks(null);
     setBranchDeck(null);
