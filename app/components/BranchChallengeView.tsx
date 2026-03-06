@@ -84,6 +84,8 @@ type Props = {
   challenge: BranchChallenge;
   selectedBranch: number | null;
   onSelectBranch: (index: number) => void;
+  selectedBranchB?: number | null;
+  onSelectBranchB?: (index: number) => void;
   onUnlock: () => void;
 };
 
@@ -240,61 +242,116 @@ function Level3View({
   onSelectBranch,
   onUnlock,
 }: Props & { challenge: BranchChallengeLevel3 }) {
+  const resolvedA =
+    challenge.branchA ?? challenge.candidateBranches[challenge.correctCandidateIndex];
+  const resolvedB =
+    challenge.branchB ?? challenge.candidateBranches[challenge.correctCandidateIndex];
+  const resolvedC =
+    challenge.branchC ?? challenge.candidateBranches[challenge.correctCandidateIndex];
+  const output = reorderByBranch(
+    reorderByBranch(reorderByBranch([...INITIAL_SYMBOLS], resolvedA), resolvedB),
+    resolvedC
+  );
+  const candidates = challenge.candidateBranches;
+
   return (
     <div className="space-y-6">
-      {/* Input */}
       <SymbolRow symbols={[...INITIAL_SYMBOLS]} />
       <FunnelTop />
 
-      {/* Branch A - known */}
+      {/* Branch A */}
       <div className="space-y-2">
         <div className="text-center text-sm text-slate-400">Branch A</div>
-        <div className="flex justify-center">
-          <div className="px-6 py-4 rounded-xl font-mono text-xl font-bold bg-slate-600 text-slate-300 border border-slate-500">
-            {challenge.branchA}
+        {challenge.branchA !== null ? (
+          <div className="flex justify-center">
+            <div className="px-6 py-4 rounded-xl font-mono text-xl font-bold bg-slate-600 text-slate-300 border border-slate-500">
+              {challenge.branchA}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-center gap-4">
+            {candidates.map((code, idx) => {
+              const isSelected = selectedBranch === idx;
+              return (
+                <button
+                  key={code}
+                  onClick={() => onSelectBranch(idx)}
+                  className={`px-6 py-4 rounded-xl font-mono text-xl font-bold transition-all ${
+                    isSelected ? "bg-blue-500 ring-2 ring-blue-300 text-white" : "bg-slate-600 hover:bg-slate-500 text-slate-200"
+                  }`}
+                >
+                  {code}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <FunnelBottom />
 
-      {/* Branch B - known */}
+      {/* Branch B */}
       <div className="space-y-2">
         <div className="text-center text-sm text-slate-400">Branch B</div>
-        <div className="flex justify-center">
-          <div className="px-6 py-4 rounded-xl font-mono text-xl font-bold bg-slate-600 text-slate-300 border border-slate-500">
-            {challenge.branchB}
+        {challenge.branchB !== null ? (
+          <div className="flex justify-center">
+            <div className="px-6 py-4 rounded-xl font-mono text-xl font-bold bg-slate-600 text-slate-300 border border-slate-500">
+              {challenge.branchB}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-center gap-4">
+            {candidates.map((code, idx) => {
+              const isSelected = selectedBranch === idx;
+              return (
+                <button
+                  key={code}
+                  onClick={() => onSelectBranch(idx)}
+                  className={`px-6 py-4 rounded-xl font-mono text-xl font-bold transition-all ${
+                    isSelected ? "bg-blue-500 ring-2 ring-blue-300 text-white" : "bg-slate-600 hover:bg-slate-500 text-slate-200"
+                  }`}
+                >
+                  {code}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <FunnelBottom />
 
-      {/* Output selection */}
+      {/* Branch C */}
       <div className="space-y-2">
-        <div className="text-center text-sm text-slate-400">
-          Which is the output?
-        </div>
-        <div className="flex flex-col gap-3">
-          {challenge.candidateOutputs.map((symbols, idx) => {
-            const isSelected = selectedBranch === idx;
-            return (
-              <button
-                key={symbols.join(",")}
-                onClick={() => onSelectBranch(idx)}
-                className={`flex justify-center gap-3 p-3 rounded-xl transition-all border-2 ${
-                  isSelected
-                    ? "bg-blue-500/20 border-blue-500 ring-2 ring-blue-300"
-                    : "bg-slate-800 border-slate-600 hover:border-slate-500"
-                }`}
-              >
-                <SymbolRow symbols={[...symbols]} />
-              </button>
-            );
-          })}
-        </div>
+        <div className="text-center text-sm text-slate-400">Branch C</div>
+        {challenge.branchC !== null ? (
+          <div className="flex justify-center">
+            <div className="px-6 py-4 rounded-xl font-mono text-xl font-bold bg-slate-600 text-slate-300 border border-slate-500">
+              {challenge.branchC}
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center gap-4">
+            {candidates.map((code, idx) => {
+              const isSelected = selectedBranch === idx;
+              return (
+                <button
+                  key={code}
+                  onClick={() => onSelectBranch(idx)}
+                  className={`px-6 py-4 rounded-xl font-mono text-xl font-bold transition-all ${
+                    isSelected ? "bg-blue-500 ring-2 ring-blue-300 text-white" : "bg-slate-600 hover:bg-slate-500 text-slate-200"
+                  }`}
+                >
+                  {code}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
+      <FunnelBottom />
+      <SymbolRow symbols={output} />
       <UnlockButton selectedBranch={selectedBranch} onUnlock={onUnlock} />
     </div>
   );
@@ -304,92 +361,95 @@ function Level4View({
   challenge,
   selectedBranch,
   onSelectBranch,
+  selectedBranchB = null,
+  onSelectBranchB,
   onUnlock,
 }: Props & { challenge: BranchChallengeLevel4 }) {
-  const correctPair = challenge.candidatePairs[challenge.correctPairIndex];
+  const correctA = challenge.candidateBranchesA[challenge.correctAIndex];
+  const correctB = challenge.candidateBranchesB[challenge.correctBIndex];
   const output = reorderByBranch(
-    reorderByBranch([...INITIAL_SYMBOLS], correctPair[0]),
-    correctPair[1]
+    reorderByBranch([...INITIAL_SYMBOLS], correctA),
+    correctB
   );
 
   return (
     <div className="space-y-6">
-      {/* Input - known */}
       <SymbolRow symbols={[...INITIAL_SYMBOLS]} />
       <FunnelTop />
 
-      {/* Branch A - unknown placeholder */}
+      {/* Branch A - 3 candidates */}
       <div className="space-y-2">
         <div className="text-center text-sm text-slate-400">Branch A</div>
-        <div className="flex justify-center">
-          <div className="px-6 py-4 rounded-xl font-mono text-xl font-bold bg-slate-800 text-slate-500 border border-dashed border-slate-600">
-            ?
-          </div>
-        </div>
-      </div>
-
-      <FunnelBottom />
-
-      {/* Branch B - unknown placeholder */}
-      <div className="space-y-2">
-        <div className="text-center text-sm text-slate-400">Branch B</div>
-        <div className="flex justify-center">
-          <div className="px-6 py-4 rounded-xl font-mono text-xl font-bold bg-slate-800 text-slate-500 border border-dashed border-slate-600">
-            ?
-          </div>
-        </div>
-      </div>
-
-      <FunnelBottom />
-
-      {/* Output - known */}
-      <SymbolRow symbols={output} />
-
-      {/* Pair selection */}
-      <div className="space-y-2">
-        <div className="text-center text-sm text-slate-400">
-          Which pair (A, B) produces this output?
-        </div>
-        <div className="flex flex-col gap-3">
-          {challenge.candidatePairs.map((pair, idx) => {
+        <div className="flex justify-center gap-4">
+          {challenge.candidateBranchesA.map((code, idx) => {
             const isSelected = selectedBranch === idx;
             return (
               <button
-                key={`${pair[0]}-${pair[1]}`}
+                key={code}
                 onClick={() => onSelectBranch(idx)}
-                className={`flex justify-center gap-4 py-3 px-4 rounded-xl transition-all border-2 font-mono text-lg ${
-                  isSelected
-                    ? "bg-blue-500/20 border-blue-500 ring-2 ring-blue-300"
-                    : "bg-slate-800 border-slate-600 hover:border-slate-500"
+                className={`px-6 py-4 rounded-xl font-mono text-xl font-bold transition-all ${
+                  isSelected ? "bg-blue-500 ring-2 ring-blue-300 text-white" : "bg-slate-600 hover:bg-slate-500 text-slate-200"
                 }`}
               >
-                <span>A: {pair[0]}</span>
-                <span>B: {pair[1]}</span>
+                {code}
               </button>
             );
           })}
         </div>
       </div>
 
-      <UnlockButton selectedBranch={selectedBranch} onUnlock={onUnlock} />
+      <FunnelBottom />
+
+      {/* Branch B - 3 candidates */}
+      <div className="space-y-2">
+        <div className="text-center text-sm text-slate-400">Branch B</div>
+        <div className="flex justify-center gap-4">
+          {challenge.candidateBranchesB.map((code, idx) => {
+            const isSelected = selectedBranchB === idx;
+            return (
+              <button
+                key={code}
+                onClick={() => onSelectBranchB?.(idx)}
+                className={`px-6 py-4 rounded-xl font-mono text-xl font-bold transition-all ${
+                  isSelected ? "bg-blue-500 ring-2 ring-blue-300 text-white" : "bg-slate-600 hover:bg-slate-500 text-slate-200"
+                }`}
+              >
+                {code}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <FunnelBottom />
+      <SymbolRow symbols={output} />
+      <UnlockButton
+        selectedBranch={selectedBranch}
+        selectedBranchB={selectedBranchB}
+        onUnlock={onUnlock}
+      />
     </div>
   );
 }
 
 function UnlockButton({
   selectedBranch,
+  selectedBranchB,
   onUnlock,
 }: {
   selectedBranch: number | null;
+  selectedBranchB?: number | null;
   onUnlock: () => void;
 }) {
+  const isDisabled =
+    selectedBranch === null || (selectedBranchB !== undefined && selectedBranchB === null);
   return (
     <div className="flex justify-center pt-4">
       <button
         onClick={onUnlock}
-        disabled={selectedBranch === null}
+        disabled={isDisabled}
         className={`flex items-center gap-2 px-8 py-4 rounded-full font-bold text-lg transition-all ${
-          selectedBranch !== null ? "bg-green-600 hover:bg-green-500 text-white" : "bg-slate-600 text-slate-400 cursor-not-allowed"
+          !isDisabled ? "bg-green-600 hover:bg-green-500 text-white" : "bg-slate-600 text-slate-400 cursor-not-allowed"
         }`}
       >
         <svg
@@ -416,6 +476,8 @@ export function BranchChallengeView({
   challenge,
   selectedBranch,
   onSelectBranch,
+  selectedBranchB,
+  onSelectBranchB,
   onUnlock,
 }: Props) {
   if (challenge.level === 1) {
@@ -453,6 +515,8 @@ export function BranchChallengeView({
       challenge={challenge}
       selectedBranch={selectedBranch}
       onSelectBranch={onSelectBranch}
+      selectedBranchB={selectedBranchB}
+      onSelectBranchB={onSelectBranchB}
       onUnlock={onUnlock}
     />
   );

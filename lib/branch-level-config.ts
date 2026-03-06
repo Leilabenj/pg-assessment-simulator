@@ -4,7 +4,11 @@ import type {
   BranchChallengeLevel3,
   BranchChallengeLevel4,
 } from './branch-challenge-types';
-import { reorderByBranch } from './branch-challenge-utils';
+import {
+  reorderByBranch,
+  reverseReorderByBranch,
+  computeRequiredBranch,
+} from './branch-challenge-utils';
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -110,50 +114,51 @@ export function generateBranchChallengesLevel2(count: number): BranchChallengeLe
   return challenges;
 }
 
-type OutputTuple = [number, number, number, number];
-
-function permToTuple(perm: string): OutputTuple {
-  return perm.split('').map(Number) as OutputTuple;
-}
-
-function tupleKey(t: OutputTuple): string {
-  return t.join(',');
-}
+const UNKNOWN_POSITIONS = ['A', 'B', 'C'] as const;
 
 export function generateBranchChallengesLevel3(count: number): BranchChallengeLevel3[] {
   const seen = new Set<string>();
   const challenges: BranchChallengeLevel3[] = [];
   const INPUT = [1, 2, 3, 4];
 
-  const allOutputTuples = ALL_PERMS.map(permToTuple);
-
   for (let i = 0; i < count; i++) {
     const branchA = pickRandom(ALL_PERMS);
     const branchB = pickRandom(ALL_PERMS);
+    const branchC = pickRandom(ALL_PERMS);
 
-    const intermediate = reorderByBranch(INPUT, branchA);
-    const output = reorderByBranch(intermediate, branchB) as OutputTuple;
-
-    const wrongPool = allOutputTuples.filter(
-      (t) => tupleKey(t) !== tupleKey(output)
+    const output = reorderByBranch(
+      reorderByBranch(reorderByBranch(INPUT, branchA), branchB),
+      branchC
     );
+
+    const unknownPosition = UNKNOWN_POSITIONS[randInt(0, 2)];
+    let correctBranch: string;
+
+    if (unknownPosition === 'A') {
+      const y = reverseReorderByBranch(output, branchC);
+      const x = reverseReorderByBranch(y, branchB);
+      correctBranch = computeRequiredBranch(INPUT, x);
+    } else if (unknownPosition === 'B') {
+      const x = reorderByBranch(INPUT, branchA);
+      const y = reverseReorderByBranch(output, branchC);
+      correctBranch = computeRequiredBranch(x, y);
+    } else {
+      const y = reorderByBranch(reorderByBranch(INPUT, branchA), branchB);
+      correctBranch = computeRequiredBranch(y, output);
+    }
+
+    const wrongPool = ALL_PERMS.filter((p) => p !== correctBranch);
     const shuffledWrong = shuffle(wrongPool);
     const [w1, w2] = [shuffledWrong[0]!, shuffledWrong[1]!];
-    const candidatesWithCorrect: [OutputTuple, OutputTuple, OutputTuple] = [
-      output,
+    const candidatesWithCorrect: [string, string, string] = [
+      correctBranch,
       w1,
       w2,
     ];
-    const shuffledCandidates = shuffle(candidatesWithCorrect) as [
-      OutputTuple,
-      OutputTuple,
-      OutputTuple,
-    ];
-    const correctIdx = shuffledCandidates.findIndex(
-      (t) => tupleKey(t) === tupleKey(output)
-    ) as 0 | 1 | 2;
+    const shuffledCandidates = shuffle(candidatesWithCorrect) as [string, string, string];
+    const correctIdx = shuffledCandidates.indexOf(correctBranch) as 0 | 1 | 2;
 
-    const key = `${branchA}|${branchB}|${tupleKey(output)}`;
+    const key = `${branchA}|${branchB}|${branchC}|${unknownPosition}`;
     if (seen.has(key)) {
       i--;
       continue;
@@ -162,10 +167,11 @@ export function generateBranchChallengesLevel3(count: number): BranchChallengeLe
 
     challenges.push({
       level: 3,
-      branchA,
-      branchB,
-      candidateOutputs: shuffledCandidates,
-      correctOutputIndex: correctIdx,
+      branchA: unknownPosition === 'A' ? null : branchA,
+      branchB: unknownPosition === 'B' ? null : branchB,
+      branchC: unknownPosition === 'C' ? null : branchC,
+      candidateBranches: shuffledCandidates,
+      correctCandidateIndex: correctIdx,
       validate: (inputs: number[]) =>
         inputs.length >= 1 && inputs[0] === correctIdx,
     });
@@ -174,50 +180,29 @@ export function generateBranchChallengesLevel3(count: number): BranchChallengeLe
   return challenges;
 }
 
-type PairTuple = [string, string];
-
-function pairProducesOutput(pair: PairTuple, input: number[], target: number[]): boolean {
-  const result = reorderByBranch(reorderByBranch(input, pair[0]), pair[1]);
-  return result.every((v, i) => v === target[i]);
-}
-
 export function generateBranchChallengesLevel4(count: number): BranchChallengeLevel4[] {
   const seen = new Set<string>();
   const challenges: BranchChallengeLevel4[] = [];
   const INPUT = [1, 2, 3, 4];
-  const MAX_ATTEMPTS = 200;
 
   for (let i = 0; i < count; i++) {
     const branchA = pickRandom(ALL_PERMS);
     const branchB = pickRandom(ALL_PERMS);
     const output = reorderByBranch(reorderByBranch(INPUT, branchA), branchB);
-    const correctPair: PairTuple = [branchA, branchB];
 
-    const wrongPairs: PairTuple[] = [];
-    for (let attempt = 0; attempt < MAX_ATTEMPTS && wrongPairs.length < 2; attempt++) {
-      const wA = pickRandom(ALL_PERMS);
-      const wB = pickRandom(ALL_PERMS);
-      const pair: PairTuple = [wA, wB];
-      if (pairProducesOutput(pair, INPUT, output)) continue;
-      const dup = wrongPairs.some(
-        (p) => p[0] === pair[0] && p[1] === pair[1]
-      );
-      if (!dup) wrongPairs.push(pair);
-    }
-    if (wrongPairs.length < 2) {
-      i--;
-      continue;
-    }
+    const wrongPoolA = ALL_PERMS.filter((p) => p !== branchA);
+    const shuffledWrongA = shuffle(wrongPoolA);
+    const [wA1, wA2] = [shuffledWrongA[0]!, shuffledWrongA[1]!];
+    const candidatesAWithCorrect: [string, string, string] = [branchA, wA1, wA2];
+    const shuffledCandidatesA = shuffle(candidatesAWithCorrect) as [string, string, string];
+    const correctAIdx = shuffledCandidatesA.indexOf(branchA) as 0 | 1 | 2;
 
-    const candidatesWithCorrect: [PairTuple, PairTuple, PairTuple] = [
-      correctPair,
-      wrongPairs[0]!,
-      wrongPairs[1]!,
-    ];
-    const shuffledCandidates = shuffle(candidatesWithCorrect) as [PairTuple, PairTuple, PairTuple];
-    const correctIdx = shuffledCandidates.findIndex(
-      (p) => p[0] === branchA && p[1] === branchB
-    ) as 0 | 1 | 2;
+    const wrongPoolB = ALL_PERMS.filter((p) => p !== branchB);
+    const shuffledWrongB = shuffle(wrongPoolB);
+    const [wB1, wB2] = [shuffledWrongB[0]!, shuffledWrongB[1]!];
+    const candidatesBWithCorrect: [string, string, string] = [branchB, wB1, wB2];
+    const shuffledCandidatesB = shuffle(candidatesBWithCorrect) as [string, string, string];
+    const correctBIdx = shuffledCandidatesB.indexOf(branchB) as 0 | 1 | 2;
 
     const key = `${branchA}|${branchB}`;
     if (seen.has(key)) {
@@ -228,10 +213,14 @@ export function generateBranchChallengesLevel4(count: number): BranchChallengeLe
 
     challenges.push({
       level: 4,
-      candidatePairs: shuffledCandidates,
-      correctPairIndex: correctIdx,
+      candidateBranchesA: shuffledCandidatesA,
+      candidateBranchesB: shuffledCandidatesB,
+      correctAIndex: correctAIdx,
+      correctBIndex: correctBIdx,
       validate: (inputs: number[]) =>
-        inputs.length >= 1 && inputs[0] === correctIdx,
+        inputs.length >= 2 &&
+        inputs[0] === correctAIdx &&
+        inputs[1] === correctBIdx,
     });
   }
 

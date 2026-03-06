@@ -1,17 +1,16 @@
 import type { BranchChallenge } from './branch-challenge-types';
 import { BRANCH_CHALLENGE_BANK } from './branch-challenges.generated';
 
-export const BRANCH_LEVEL_ORDER = [1, 2, 3, 4] as const;
+export const BRANCH_LEVEL_ORDER = [1, 2, 3] as const;
 export type BranchLevel = (typeof BRANCH_LEVEL_ORDER)[number];
 
-/** Cumulative score at which each branch level starts. L2 at 9, L3 at 16, L4 at 24. */
-export const BRANCH_CUMULATIVE_THRESHOLDS = [0, 9, 16, 24] as const;
+/** Cumulative score at which each branch level starts. L1: 0–11, L2: 12–15, L3: 16+. */
+export const BRANCH_CUMULATIVE_THRESHOLDS = [0, 12, 16] as const;
 
 export function getBranchLevelForScore(score: number): BranchLevel {
-  if (score < 9) return 1;
+  if (score < 12) return 1;
   if (score < 16) return 2;
-  if (score < 24) return 3;
-  return 4;
+  return 3;
 }
 
 /** Index of the challenge within the current branch level (0-based). */
@@ -29,13 +28,12 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
-/** Builds per-level decks: one shuffled array per level from BRANCH_CHALLENGE_BANK. */
-export function buildBranchDecks(): Record<1 | 2 | 3 | 4, BranchChallenge[]> {
+/** Builds per-level decks: one shuffled array per level from BRANCH_CHALLENGE_BANK. Level 1 = merged single-stage + serial-deduction. */
+export function buildBranchDecks(): Record<1 | 2 | 3, BranchChallenge[]> {
   return {
     1: shuffle(BRANCH_CHALLENGE_BANK[1] ?? []),
     2: shuffle(BRANCH_CHALLENGE_BANK[2] ?? []),
     3: shuffle(BRANCH_CHALLENGE_BANK[3] ?? []),
-    4: shuffle(BRANCH_CHALLENGE_BANK[4] ?? []),
   };
 }
 
