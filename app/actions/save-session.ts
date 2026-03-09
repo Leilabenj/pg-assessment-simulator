@@ -6,10 +6,10 @@ import type { Prisma } from '@/lib/generated/prisma/client';
 
 export async function saveSession(data: {
   mode: 'formula' | 'branch';
-  score: number;
-  levelReached: number;
+  maxInternalLevel: number;
+  totalQuestions?: number;
+  correctCount: number;
   durationSeconds: number;
-  analytics?: Record<string, unknown> | null;
 }) {
   try {
     const user = await getOrCreateUser();
@@ -18,10 +18,10 @@ export async function saveSession(data: {
       data: {
         userId: user?.id ?? null,
         mode: data.mode,
-        score: data.score,
-        levelReached: data.levelReached,
+        maxInternalLevel: data.maxInternalLevel,
+        ...(data.totalQuestions != null && { totalQuestions: data.totalQuestions }),
+        correctCount: data.correctCount,
         durationSeconds: data.durationSeconds,
-        ...(data.analytics != null && { analytics: data.analytics as Prisma.InputJsonValue }),
       },
     });
   } catch (error) {

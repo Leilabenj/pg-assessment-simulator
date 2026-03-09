@@ -59,8 +59,8 @@ export default function DigitChallenge() {
         hasSavedRef.current = true;
         saveSession({
           mode,
-          score,
-          levelReached: mode === 'formula' ? getLevelForScore(score) : getBranchLevelForScore(score),
+          maxInternalLevel: mode === 'formula' ? getLevelForScore(score) : getBranchLevelForScore(score),
+          correctCount: score,
           durationSeconds: 300,
         }).catch(console.error);
       }
