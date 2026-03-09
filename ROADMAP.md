@@ -28,12 +28,11 @@
     - [-] Install and configure **Clerk SDK** for Next.js (sign-in optional; no gate on main app).
     - [-] Sync Clerk `User` metadata with your PostgreSQL `User` record when a user signs in --> UPSERT for now == lib/auth.ts helper file containing callable getOrCreateUser()
 
-### Day 4: Persistence Layer (API Design)
+### Day 4: Persistence Layer (API Design) (Completed)
 - **Focus:** Server Actions & Data Flow.
 - **Tasks:**
     - [-] Build a Next.js **Server Action** to save session results post-timer (anonymous: `userId` null; signed-in: link to `User`).
-    - [ ] Implement robust error handling (Try/Catch) for DB writes.
-    - [ ] Add a "Loading" state for post-game data submission.
+    - [-] Implement robust error handling (Try/Catch) for DB writes.
 
 ### Day 5: Performance Analytics (The Data Science Flex)
 - **Focus:** Data Visualization.

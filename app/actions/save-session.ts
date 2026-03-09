@@ -11,16 +11,20 @@ export async function saveSession(data: {
   durationSeconds: number;
   analytics?: Record<string, unknown> | null;
 }) {
-  const user = await getOrCreateUser();
+  try {
+    const user = await getOrCreateUser();
 
-  await db.session.create({
-    data: {
-      userId: user?.id ?? null,
-      mode: data.mode,
-      score: data.score,
-      levelReached: data.levelReached,
-      durationSeconds: data.durationSeconds,
-      ...(data.analytics != null && { analytics: data.analytics as Prisma.InputJsonValue }),
-    },
-  });
+    await db.session.create({
+      data: {
+        userId: user?.id ?? null,
+        mode: data.mode,
+        score: data.score,
+        levelReached: data.levelReached,
+        durationSeconds: data.durationSeconds,
+        ...(data.analytics != null && { analytics: data.analytics as Prisma.InputJsonValue }),
+      },
+    });
+  } catch (error) {
+    console.error('[saveSession] DB write failed:', error);
+  }
 }

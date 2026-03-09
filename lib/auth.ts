@@ -13,11 +13,15 @@ export async function getOrCreateUser() {
   const email = clerkUser.emailAddresses?.[0]?.emailAddress ?? undefined;
   const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || undefined;
 
-  const user = await db.user.upsert({
-    where: { clerkId: clerkUser.id },
-    create: { clerkId: clerkUser.id, email, name },
-    update: { email, name },
-  });
-
-  return user;
+  try {
+    const user = await db.user.upsert({
+      where: { clerkId: clerkUser.id },
+      create: { clerkId: clerkUser.id, email, name },
+      update: { email, name },
+    });
+    return user;
+  } catch (error) {
+    console.error('[getOrCreateUser] DB error:', error);
+    return null;
+  }
 }
