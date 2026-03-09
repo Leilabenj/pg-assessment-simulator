@@ -39,7 +39,11 @@
 
 - Goal: Update the "Brain" (Database) to support high-fidelity telemetry.
 1) Schema Migration: * Apply the new schema.prisma (the one with LevelAttempt and maxInternalLevel).
-2) Server Action Upgrade: * Update save-session.ts to accept the attempts array and use a Nested Create to save everything in one transaction.
+    - Applied new schema definitions on Neon-Branch.
+    - Had to update save-session and page to pass the right field. MaxInternLevel untracked for now
+2) Define Internal Levels and Levels-for-Interface
+3) Game Logic Instrumentation: Track per-attempt data (sequence, difficulty, isCorrect, responseTimeMs) and session totals (maxInternalLevel, totalQuestions) in frontend state. Update handleKey and handleUnlockBranch to record each attempt.
+4) Server Action Upgrade: * Update save-session.ts to accept the attempts array and use a Nested Create to save everything in one transaction.
 
 - Goal: Make the game "Fast-Ramp" like the real P&G assessment.
 1) The Momentum Logic: * Update your handleAnswer function to include the Streak Bonus (Promotion +2) and Penalty (Demotion -2).

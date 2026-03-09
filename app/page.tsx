@@ -1,8 +1,11 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import type { Challenge } from '@/lib/challenge-types';
-import { CHALLENGE_BANK } from '@/lib/challenges.generated';
-import { buildLevelDecks, getLevelForScore, getIndexInLevel, LEVEL_ORDER, type Level } from '@/lib/challenge-utils';
+import { INTERNAL_LEVEL_POOLS } from '@/lib/level-config';
+import {
+  getNextInternalLevel,
+  generateChallengeForInternalLevel,
+} from '@/lib/adaptive-formula';
 import {
   isCorrectFormula,
   getPlaceholderCount,
@@ -19,7 +22,7 @@ import {
 import { BranchChallengeView } from '@/app/components/BranchChallengeView';
 import { saveSession } from '@/app/actions/save-session';
 
-const HAS_FORMULA_CHALLENGES = LEVEL_ORDER.some((l) => (CHALLENGE_BANK[l]?.length ?? 0) > 0);
+const HAS_FORMULA_CHALLENGES = INTERNAL_LEVEL_POOLS.length > 0;
 const HAS_BRANCH_CHALLENGES =
   (BRANCH_CHALLENGE_BANK[1]?.length ?? 0) > 0 ||
   (BRANCH_CHALLENGE_BANK[2]?.length ?? 0) > 0 ||
@@ -30,7 +33,6 @@ type GameMode = 'formula' | 'branch' | null;
 
 export default function DigitChallenge() {
   const [mode, setMode] = useState<GameMode>(null);
-  const [levelDecks, setLevelDecks] = useState<Record<Level, Challenge[]> | null>(null);
   const [branchDeck, setBranchDeck] = useState<Record<1 | 2 | 3, BranchChallenge[]> | null>(null);
   const [timeLeft, setTimeLeft] = useState(300);
   const [score, setScore] = useState(0);
@@ -40,9 +42,19 @@ export default function DigitChallenge() {
   const [status, setStatus] = useState<'START' | 'PLAY' | 'END'>('START');
   const scoreRef = useRef(score);
   const failTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastScoredKeyRef = useRef<string | null>(null);
   const hasSavedRef = useRef(false);
+
+  const [internalLevel, setInternalLevel] = useState(1);
+  const [sequence, setSequence] = useState(1);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(null);
+  const maxInternalLevelRef = useRef(1);
+  const sequenceRef = useRef(1);
+  const correctCountRef = useRef(0);
+
   scoreRef.current = score;
+  sequenceRef.current = sequence;
+  correctCountRef.current = correctCount;
 
   useEffect(() => {
     return () => {
@@ -59,48 +71,42 @@ export default function DigitChallenge() {
         hasSavedRef.current = true;
         saveSession({
           mode,
-          maxInternalLevel: mode === 'formula' ? getLevelForScore(score) : getBranchLevelForScore(score),
-          correctCount: score,
+          maxInternalLevel:
+            mode === 'formula' ? maxInternalLevelRef.current : getBranchLevelForScore(score),
+          totalQuestions: mode === 'formula' ? sequenceRef.current : undefined,
+          correctCount: mode === 'formula' ? correctCountRef.current : score,
           durationSeconds: 300,
         }).catch(console.error);
       }
       setStatus('END');
     }
-  }, [status, timeLeft, mode, score]);
+  }, [status, timeLeft, mode, score, sequence, correctCount]);
 
   const handleKey = (num: number) => {
-    if (status !== 'PLAY' || mode !== 'formula' || !levelDecks) return;
+    if (status !== 'PLAY' || mode !== 'formula' || !currentChallenge) return;
     if (failTimeoutRef.current) {
       clearTimeout(failTimeoutRef.current);
       failTimeoutRef.current = null;
     }
-    setCurrentInput(prev => {
-      const newInput = [...prev, num];
-      const s = scoreRef.current;
-      const level = getLevelForScore(s);
-      const idx = getIndexInLevel(s);
-      const deck = levelDecks[level];
-      const challenge = deck?.[idx % deck.length];
-      if (!challenge) return newInput;
-      const placeholderCount = getPlaceholderCount(challenge.formula);
-      if (newInput.length === placeholderCount) {
-        if (isCorrectFormula(challenge, newInput)) {
-          const scoreKey = `${s}-${newInput.join(',')}`;
-          if (lastScoredKeyRef.current !== scoreKey) {
-            lastScoredKeyRef.current = scoreKey;
-            setScore(s => s + 1);
-          }
-          return [];
-        } else {
-          failTimeoutRef.current = setTimeout(() => {
-            failTimeoutRef.current = null;
-            setCurrentInput([]);
-          }, 300);
-          return newInput;
-        }
-      }
-      return newInput;
-    });
+    const newInput = [...currentInput, num];
+    const placeholderCount = getPlaceholderCount(currentChallenge.formula);
+
+    if (newInput.length < placeholderCount) {
+      setCurrentInput(newInput);
+      return;
+    }
+
+    const isCorrect = isCorrectFormula(currentChallenge, newInput);
+    const nextLevel = getNextInternalLevel(internalLevel, isCorrect);
+    if (nextLevel > maxInternalLevelRef.current) {
+      maxInternalLevelRef.current = nextLevel;
+    }
+    setCurrentInput([]);
+    setInternalLevel(nextLevel);
+    setCorrectCount(c => (isCorrect ? c + 1 : c));
+    setSequence(s => s + 1);
+    const nextChallenge = generateChallengeForInternalLevel(nextLevel);
+    setCurrentChallenge(nextChallenge ?? currentChallenge);
   };
 
   const handleBackspace = () => {
@@ -113,10 +119,8 @@ export default function DigitChallenge() {
       clearTimeout(failTimeoutRef.current);
       failTimeoutRef.current = null;
     }
-    lastScoredKeyRef.current = null;
     hasSavedRef.current = false;
     setMode(null);
-    setLevelDecks(null);
     setBranchDeck(null);
     setTimeLeft(300);
     setScore(0);
@@ -124,12 +128,21 @@ export default function DigitChallenge() {
     setSelectedBranch(null);
     setSelectedBranchB(null);
     setStatus('START');
+    setInternalLevel(1);
+    setSequence(1);
+    setCorrectCount(0);
+    setCurrentChallenge(null);
+    maxInternalLevelRef.current = 1;
   };
 
   const handleStartFormula = () => {
     setMode('formula');
-    const decks = buildLevelDecks();
-    setLevelDecks(decks);
+    setCurrentInput([]);
+    setInternalLevel(1);
+    setSequence(1);
+    setCorrectCount(0);
+    maxInternalLevelRef.current = 1;
+    setCurrentChallenge(generateChallengeForInternalLevel(1));
     setStatus('PLAY');
   };
 
@@ -169,10 +182,6 @@ export default function DigitChallenge() {
     }
   };
 
-  const currentLevel = getLevelForScore(score);
-  const indexInLevel = getIndexInLevel(score);
-  const formulaDeck = levelDecks?.[currentLevel];
-  const currentFormulaChallenge = formulaDeck?.[indexInLevel % formulaDeck.length] ?? null;
   const branchLevel = getBranchLevelForScore(score);
   const branchIndexInLevel = getBranchIndexInLevel(score);
   const branchLevelDeck = branchDeck?.[branchLevel];
@@ -201,12 +210,12 @@ export default function DigitChallenge() {
           <div className="flex items-center gap-3">
             {status === 'PLAY' && mode && (
               <div className="text-lg bg-slate-700 px-4 py-1 rounded-full">
-                {mode === 'formula'
-                ? `Level ${currentLevel} / ${LEVEL_ORDER.length}`
-                : `Branch Level ${branchLevel} / ${BRANCH_LEVEL_ORDER.length}`}
+                {mode === 'formula' ? `Level ${sequence}` : `Branch Level ${branchLevel} / ${BRANCH_LEVEL_ORDER.length}`}
               </div>
             )}
-            <div className="text-xl bg-slate-700 px-4 py-1 rounded-full">Score: {score}</div>
+            {mode === 'branch' && (
+              <div className="text-xl bg-slate-700 px-4 py-1 rounded-full">Score: {score}</div>
+            )}
           </div>
         </div>
 
@@ -236,10 +245,10 @@ export default function DigitChallenge() {
           </div>
         )}
 
-        {status === 'PLAY' && mode === 'formula' && currentFormulaChallenge && (
+        {status === 'PLAY' && mode === 'formula' && currentChallenge && (
           <>
             <div className="text-center text-4xl mb-12 font-mono min-h-20 flex flex-wrap items-center justify-center gap-2 px-2">
-              {currentFormulaChallenge.formula.split('( )').map((part, i, arr) => (
+              {currentChallenge.formula.split('( )').map((part, i, arr) => (
                 <React.Fragment key={i}>
                   {part}
                   {i < arr.length - 1 && (
@@ -252,7 +261,7 @@ export default function DigitChallenge() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               {(() => {
-                const forbiddenDigits = getPureDigitsInFormula(currentFormulaChallenge.formula);
+                const forbiddenDigits = getPureDigitsInFormula(currentChallenge.formula);
                 return [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
                   const isDisabled = forbiddenDigits.has(n) || currentInput.includes(n);
                   return (
@@ -305,7 +314,9 @@ export default function DigitChallenge() {
         {status === 'END' && (
           <div className="text-center">
             <h2 className="text-4xl font-bold mb-4">FINISH</h2>
-            <p className="text-xl text-slate-400 mb-8">Final Score: {score}</p>
+            <p className="text-xl text-slate-400 mb-8">
+              {mode === 'formula' ? `Final Level: ${sequence}` : `Final Score: ${score}`}
+            </p>
             <button onClick={handleRetry} className="px-10 py-3 bg-white text-black rounded-full font-bold">RETRY</button>
           </div>
         )}
