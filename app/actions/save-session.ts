@@ -2,7 +2,6 @@
 
 import { getOrCreateUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import type { Prisma } from '@/lib/generated/prisma/client';
 
 export async function saveSession(data: {
   mode: 'formula' | 'branch';
@@ -10,6 +9,7 @@ export async function saveSession(data: {
   totalQuestions: number;
   correctCount: number;
   durationSeconds: number;
+  attempts: { sequence: number; difficulty: number; isCorrect: boolean; responseTimeMs: number }[];
 }) {
   try {
     const user = await getOrCreateUser();
@@ -22,6 +22,14 @@ export async function saveSession(data: {
         totalQuestions: data.totalQuestions,
         correctCount: data.correctCount,
         durationSeconds: data.durationSeconds,
+        attempts: {
+          create: data.attempts.map((a) => ({
+            sequence: a.sequence,
+            difficulty: a.difficulty,
+            isCorrect: a.isCorrect,
+            responseTimeMs: a.responseTimeMs,
+          })),
+        },
       },
     });
   } catch (error) {
