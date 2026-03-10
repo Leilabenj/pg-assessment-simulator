@@ -99,11 +99,12 @@ export default function DigitChallenge() {
           totalQuestions: mode === 'formula' ? sequenceRef.current : branchSequenceRef.current,
           correctCount: mode === 'formula' ? correctCountRef.current : score,
           durationSeconds: 300,
+          attempts,
         }).catch(console.error);
       }
       setStatus('END');
     }
-  }, [status, timeLeft, mode, score, sequence, correctCount]);
+  }, [status, timeLeft, mode, score, sequence, correctCount, attempts]);
 
   const handleKey = (num: number) => {
     if (status !== 'PLAY' || mode !== 'formula' || !currentChallenge) return;
