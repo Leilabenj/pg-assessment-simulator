@@ -31,7 +31,7 @@ model Session {
 
   // Aggregate Metrics (Common to all games)
   maxInternalLevel Int           
-  totalQuestions   Int?           
+  totalQuestions   Int           
   correctCount     Int           
   durationSeconds  Int           
   createdAt        DateTime      @default(now())
