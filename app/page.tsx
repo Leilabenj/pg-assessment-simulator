@@ -31,6 +31,13 @@ const HAS_CHALLENGES = HAS_FORMULA_CHALLENGES || HAS_BRANCH_CHALLENGES;
 
 type GameMode = 'formula' | 'branch' | null;
 
+type AttemptRecord = {
+  sequence: number;
+  difficulty: number;
+  isCorrect: boolean;
+  responseTimeMs: number;
+};
+
 export default function DigitChallenge() {
   const [mode, setMode] = useState<GameMode>(null);
   const [branchDeck, setBranchDeck] = useState<Record<1 | 2 | 3, BranchChallenge[]> | null>(null);
@@ -51,16 +58,32 @@ export default function DigitChallenge() {
   const maxInternalLevelRef = useRef(1);
   const sequenceRef = useRef(1);
   const correctCountRef = useRef(0);
+  const [attempts, setAttempts] = useState<AttemptRecord[]>([]);
+  const challengeStartTimeRef = useRef(0);
+  const [branchSequence, setBranchSequence] = useState(0);
+  const maxBranchLevelRef = useRef(0);
+  const branchSequenceRef = useRef(0);
 
   scoreRef.current = score;
   sequenceRef.current = sequence;
   correctCountRef.current = correctCount;
+  branchSequenceRef.current = branchSequence;
 
   useEffect(() => {
     return () => {
       if (failTimeoutRef.current) clearTimeout(failTimeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (status === 'PLAY' && mode === 'branch' && branchDeck) {
+      const bl = getBranchLevelForScore(score);
+      const bil = getBranchIndexInLevel(score);
+      const deck = branchDeck[bl];
+      const ch = deck?.[bil % deck.length];
+      if (ch) challengeStartTimeRef.current = Date.now();
+    }
+  }, [status, mode, score, branchDeck]);
 
   useEffect(() => {
     if (status === 'PLAY' && timeLeft > 0) {
@@ -72,8 +95,8 @@ export default function DigitChallenge() {
         saveSession({
           mode,
           maxInternalLevel:
-            mode === 'formula' ? maxInternalLevelRef.current : getBranchLevelForScore(score),
-          totalQuestions: mode === 'formula' ? sequenceRef.current : undefined,
+            mode === 'formula' ? maxInternalLevelRef.current : Math.max(1, maxBranchLevelRef.current),
+          totalQuestions: mode === 'formula' ? sequenceRef.current : branchSequenceRef.current,
           correctCount: mode === 'formula' ? correctCountRef.current : score,
           durationSeconds: 300,
         }).catch(console.error);
@@ -96,7 +119,14 @@ export default function DigitChallenge() {
       return;
     }
 
+    const responseTimeMs = Date.now() - challengeStartTimeRef.current;
     const isCorrect = isCorrectFormula(currentChallenge, newInput);
+    setAttempts(prev => [...prev, {
+      sequence,
+      difficulty: internalLevel,
+      isCorrect,
+      responseTimeMs,
+    }]);
     const nextLevel = getNextInternalLevel(internalLevel, isCorrect);
     if (nextLevel > maxInternalLevelRef.current) {
       maxInternalLevelRef.current = nextLevel;
@@ -106,6 +136,7 @@ export default function DigitChallenge() {
     setCorrectCount(c => (isCorrect ? c + 1 : c));
     setSequence(s => s + 1);
     const nextChallenge = generateChallengeForInternalLevel(nextLevel);
+    challengeStartTimeRef.current = Date.now();
     setCurrentChallenge(nextChallenge ?? currentChallenge);
   };
 
@@ -132,7 +163,11 @@ export default function DigitChallenge() {
     setSequence(1);
     setCorrectCount(0);
     setCurrentChallenge(null);
+    setAttempts([]);
+    setBranchSequence(0);
+    challengeStartTimeRef.current = 0;
     maxInternalLevelRef.current = 1;
+    maxBranchLevelRef.current = 0;
   };
 
   const handleStartFormula = () => {
@@ -141,8 +176,11 @@ export default function DigitChallenge() {
     setInternalLevel(1);
     setSequence(1);
     setCorrectCount(0);
+    setAttempts([]);
     maxInternalLevelRef.current = 1;
-    setCurrentChallenge(generateChallengeForInternalLevel(1));
+    const firstChallenge = generateChallengeForInternalLevel(1);
+    setCurrentChallenge(firstChallenge);
+    challengeStartTimeRef.current = Date.now();
     setStatus('PLAY');
   };
 
@@ -150,6 +188,9 @@ export default function DigitChallenge() {
     setMode('branch');
     const deck = buildBranchDecks();
     setBranchDeck(deck);
+    setAttempts([]);
+    setBranchSequence(0);
+    maxBranchLevelRef.current = 0;
     setStatus('PLAY');
   };
 
@@ -169,12 +210,26 @@ export default function DigitChallenge() {
     if (isLevel4 && (selectedBranch === null || selectedBranchB === null)) return;
     if (!isLevel4 && selectedBranch === null) return;
     const validateInputs = isLevel4 ? [selectedBranch!, selectedBranchB!] : [selectedBranch!];
-    if (challenge.validate(validateInputs)) {
+    const responseTimeMs = Date.now() - challengeStartTimeRef.current;
+    const isCorrect = challenge.validate(validateInputs);
+    if (challenge.level > maxBranchLevelRef.current) {
+      maxBranchLevelRef.current = challenge.level;
+    }
+    const nextSeq = branchSequenceRef.current + 1;
+    setAttempts(prev => [...prev, {
+      sequence: nextSeq,
+      difficulty: challenge.level,
+      isCorrect,
+      responseTimeMs,
+    }]);
+    setBranchSequence(nextSeq);
+    if (isCorrect) {
       setScore(s + 1);
       setSelectedBranch(null);
       setSelectedBranchB(null);
     } else {
       failTimeoutRef.current = setTimeout(() => {
+        challengeStartTimeRef.current = Date.now();
         failTimeoutRef.current = null;
         setSelectedBranch(null);
         setSelectedBranchB(null);
