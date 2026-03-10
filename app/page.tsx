@@ -115,13 +115,17 @@ export default function DigitChallenge() {
     const newInput = [...currentInput, num];
     const placeholderCount = getPlaceholderCount(currentChallenge.formula);
 
-    if (newInput.length < placeholderCount) {
+    if (newInput.length <= placeholderCount) {
       setCurrentInput(newInput);
-      return;
     }
+  };
 
+  const handleLockSubmit = () => {
+    if (status !== 'PLAY' || mode !== 'formula' || !currentChallenge) return;
+    const placeholderCount = getPlaceholderCount(currentChallenge.formula);
+    if (currentInput.length !== placeholderCount) return;
     const responseTimeMs = Date.now() - challengeStartTimeRef.current;
-    const isCorrect = isCorrectFormula(currentChallenge, newInput);
+    const isCorrect = isCorrectFormula(currentChallenge, currentInput);
     setAttempts(prev => [...prev, {
       sequence,
       difficulty: internalLevel,
@@ -342,7 +346,24 @@ export default function DigitChallenge() {
               <button onClick={() => setCurrentInput([])} className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider">
                 Clear
               </button>
-              <button onClick={handleRetry} className="py-3 text-slate-400 hover:text-white uppercase text-sm tracking-widest">
+              {(() => {
+                const placeholderCount = getPlaceholderCount(currentChallenge.formula);
+                const canLock = currentInput.length === placeholderCount;
+                return (
+                  <button
+                    onClick={handleLockSubmit}
+                    disabled={!canLock}
+                    className={
+                      canLock
+                        ? "py-5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider"
+                        : "py-5 bg-slate-800 text-slate-500 cursor-not-allowed rounded-xl text-sm font-bold uppercase tracking-wider"
+                    }
+                  >
+                    Lock
+                  </button>
+                );
+              })()}
+              <button onClick={handleRetry} className="py-3 text-slate-400 hover:text-white uppercase text-sm tracking-widest col-span-3">
                 Restart Session
               </button>
             </div>
