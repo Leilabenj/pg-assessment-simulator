@@ -43,7 +43,8 @@ export default function DigitChallenge() {
   const [branchDeck, setBranchDeck] = useState<Record<1 | 2 | 3, BranchChallenge[]> | null>(null);
   const [timeLeft, setTimeLeft] = useState(300);
   const [score, setScore] = useState(0);
-  const [currentInput, setCurrentInput] = useState<number[]>([]);
+  const [currentInput, setCurrentInput] = useState<(number | null)[]>([]);
+  const [selectedPlaceholderIndex, setSelectedPlaceholderIndex] = useState<number | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
   const [selectedBranchB, setSelectedBranchB] = useState<number | null>(null);
   const [status, setStatus] = useState<'START' | 'PLAY' | 'END'>('START');
@@ -112,20 +113,25 @@ export default function DigitChallenge() {
       clearTimeout(failTimeoutRef.current);
       failTimeoutRef.current = null;
     }
-    const newInput = [...currentInput, num];
-    const placeholderCount = getPlaceholderCount(currentChallenge.formula);
-
-    if (newInput.length <= placeholderCount) {
-      setCurrentInput(newInput);
-    }
+    setCurrentInput(prev => {
+      const next = [...prev];
+      if (selectedPlaceholderIndex !== null) {
+        next[selectedPlaceholderIndex] = num;
+      } else {
+        const firstEmptyIndex = prev.findIndex(x => x === null);
+        if (firstEmptyIndex !== -1) next[firstEmptyIndex] = num;
+      }
+      return next;
+    });
   };
 
   const handleLockSubmit = () => {
     if (status !== 'PLAY' || mode !== 'formula' || !currentChallenge) return;
     const placeholderCount = getPlaceholderCount(currentChallenge.formula);
-    if (currentInput.length !== placeholderCount) return;
+    const filled = currentInput.filter((x): x is number => x != null);
+    if (filled.length !== placeholderCount) return;
     const responseTimeMs = Date.now() - challengeStartTimeRef.current;
-    const isCorrect = isCorrectFormula(currentChallenge, currentInput);
+    const isCorrect = isCorrectFormula(currentChallenge, filled);
     setAttempts(prev => [...prev, {
       sequence,
       difficulty: internalLevel,
@@ -136,18 +142,35 @@ export default function DigitChallenge() {
     if (nextLevel > maxInternalLevelRef.current) {
       maxInternalLevelRef.current = nextLevel;
     }
-    setCurrentInput([]);
     setInternalLevel(nextLevel);
     setCorrectCount(c => (isCorrect ? c + 1 : c));
     setSequence(s => s + 1);
     const nextChallenge = generateChallengeForInternalLevel(nextLevel);
+    const nextCh = nextChallenge ?? currentChallenge;
+    setCurrentInput(Array(getPlaceholderCount(nextCh.formula)).fill(null));
+    setSelectedPlaceholderIndex(null);
     challengeStartTimeRef.current = Date.now();
-    setCurrentChallenge(nextChallenge ?? currentChallenge);
+    setCurrentChallenge(nextCh);
   };
 
   const handleBackspace = () => {
-    if (status !== 'PLAY') return;
-    setCurrentInput(prev => (prev.length > 0 ? prev.slice(0, -1) : prev));
+    if (status !== 'PLAY' || mode !== 'formula') return;
+    setCurrentInput(prev => {
+      const next = [...prev];
+      if (selectedPlaceholderIndex !== null) {
+        next[selectedPlaceholderIndex] = null;
+      } else {
+        let lastFilledIndex = -1;
+        for (let i = prev.length - 1; i >= 0; i--) {
+          if (prev[i] != null) {
+            lastFilledIndex = i;
+            break;
+          }
+        }
+        if (lastFilledIndex !== -1) next[lastFilledIndex] = null;
+      }
+      return next;
+    });
   };
 
   const handleRetry = () => {
@@ -161,6 +184,7 @@ export default function DigitChallenge() {
     setTimeLeft(300);
     setScore(0);
     setCurrentInput([]);
+    setSelectedPlaceholderIndex(null);
     setSelectedBranch(null);
     setSelectedBranchB(null);
     setStatus('START');
@@ -176,14 +200,17 @@ export default function DigitChallenge() {
   };
 
   const handleStartFormula = () => {
+    const firstChallenge = generateChallengeForInternalLevel(1);
+    if (!firstChallenge) return;
     setMode('formula');
-    setCurrentInput([]);
     setInternalLevel(1);
     setSequence(1);
     setCorrectCount(0);
     setAttempts([]);
     maxInternalLevelRef.current = 1;
-    const firstChallenge = generateChallengeForInternalLevel(1);
+    const phCount = getPlaceholderCount(firstChallenge.formula);
+    setCurrentInput(Array(phCount).fill(null));
+    setSelectedPlaceholderIndex(null);
     setCurrentChallenge(firstChallenge);
     challengeStartTimeRef.current = Date.now();
     setStatus('PLAY');
@@ -312,9 +339,17 @@ export default function DigitChallenge() {
                 <React.Fragment key={i}>
                   {part}
                   {i < arr.length - 1 && (
-                    <span className="min-w-12 w-14 border-b-4 border-blue-500 text-blue-400 text-center">
-                      {currentInput[i] || ""}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlaceholderIndex(i)}
+                      className={`min-w-12 w-14 border-b-4 text-center cursor-pointer transition-all ${
+                        selectedPlaceholderIndex === i
+                          ? "border-blue-400 bg-blue-900/40 text-blue-300 ring-2 ring-blue-400 rounded"
+                          : "border-blue-500 text-blue-400 hover:bg-slate-700/50 rounded"
+                      }`}
+                    >
+                      {currentInput[i] ?? ""}
+                    </button>
                   )}
                 </React.Fragment>
               ))}
@@ -322,8 +357,20 @@ export default function DigitChallenge() {
             <div className="grid grid-cols-3 gap-3">
               {(() => {
                 const forbiddenDigits = getPureDigitsInFormula(currentChallenge.formula);
+                const digitsInOtherPlaceholders = new Set(
+                  currentInput
+                    .map((d, j) => (j !== selectedPlaceholderIndex && d != null ? d : null))
+                    .filter((d): d is number => d != null)
+                );
+                const digitsInCurrentInput = new Set(
+                  currentInput.filter((d): d is number => d != null)
+                );
                 return [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
-                  const isDisabled = forbiddenDigits.has(n) || currentInput.includes(n);
+                  const isDisabled =
+                    forbiddenDigits.has(n) ||
+                    (selectedPlaceholderIndex !== null
+                      ? digitsInOtherPlaceholders.has(n)
+                      : digitsInCurrentInput.has(n));
                   return (
                     <button
                       key={n}
@@ -340,15 +387,46 @@ export default function DigitChallenge() {
                   );
                 });
               })()}
-              <button onClick={handleBackspace} className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-2xl font-bold active:scale-95 transition-all" title="Remove last digit">
-                ⌫
-              </button>
-              <button onClick={() => setCurrentInput([])} className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider">
-                Clear
-              </button>
+              {(() => {
+                const hasAnyDigit = currentInput.some(x => x != null);
+                const canBackspace =
+                  (selectedPlaceholderIndex !== null &&
+                    currentInput[selectedPlaceholderIndex ?? -1] != null) ||
+                  (selectedPlaceholderIndex === null && hasAnyDigit);
+                return (
+                  <button
+                    onClick={handleBackspace}
+                    disabled={!canBackspace}
+                    className={
+                      canBackspace
+                        ? "py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-2xl font-bold active:scale-95 transition-all"
+                        : "py-5 bg-slate-800 text-slate-500 cursor-not-allowed rounded-xl text-2xl font-bold transition-all"
+                    }
+                    title={selectedPlaceholderIndex !== null ? "Clear selected placeholder" : "Remove last digit"}
+                  >
+                    ⌫
+                  </button>
+                );
+              })()}
               {(() => {
                 const placeholderCount = getPlaceholderCount(currentChallenge.formula);
-                const canLock = currentInput.length === placeholderCount;
+                return (
+                  <button
+                    onClick={() => {
+                      setCurrentInput(Array(placeholderCount).fill(null));
+                      setSelectedPlaceholderIndex(null);
+                    }}
+                    className="py-5 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold active:scale-95 transition-all uppercase tracking-wider"
+                  >
+                    Clear
+                  </button>
+                );
+              })()}
+              {(() => {
+                const placeholderCount = getPlaceholderCount(currentChallenge.formula);
+                const canLock =
+                  currentInput.length === placeholderCount &&
+                  currentInput.every((x) => x != null);
                 return (
                   <button
                     onClick={handleLockSubmit}
