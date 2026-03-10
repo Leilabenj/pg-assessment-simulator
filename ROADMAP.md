@@ -35,7 +35,7 @@
     - [-] Implement robust error handling (Try/Catch) for DB writes.
 
 
-### In between : switch to adaptive-based challenges
+### In between : switch to adaptive-based challenges (completed)
 
 - Goal: Update the "Brain" (Database) to support high-fidelity telemetry.
 1) Schema Migration: * Apply the new schema.prisma (the one with LevelAttempt and maxInternalLevel).
@@ -53,6 +53,10 @@ The Target: Manually test that you can reach genTripleProduct by exactly the 10t
 
 Update the "End Game" trigger to send the maxInternalLevel and totalQuestions to the server.
 
+- 
+### Day 5: Performance Analytics (The Data Science Flex)
+- **Focus:** Data Visualization.
+
 - Goal: Write the logic that calculates the 3 Pillars.
 1) Data Aggregation Service:
 
@@ -63,9 +67,6 @@ Implement the Standard Deviation logic for the "Consistency" pillar.
 Implement the Moving Average logic for the "Trend" pillar.
 2) The "Safe Zone" Constant:
 
-- 
-### Day 5: Performance Analytics (The Data Science Flex)
-- **Focus:** Data Visualization.
 - **Tasks:**
     - [ ] Integrate **Tremor** for UI components.
     - [ ] Build a "Session Summary" screen (Radar charts for Speed vs. Accuracy).
