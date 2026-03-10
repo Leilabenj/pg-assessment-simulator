@@ -7,7 +7,7 @@ import type { Prisma } from '@/lib/generated/prisma/client';
 export async function saveSession(data: {
   mode: 'formula' | 'branch';
   maxInternalLevel: number;
-  totalQuestions?: number;
+  totalQuestions: number;
   correctCount: number;
   durationSeconds: number;
 }) {
@@ -19,7 +19,7 @@ export async function saveSession(data: {
         userId: user?.id ?? null,
         mode: data.mode,
         maxInternalLevel: data.maxInternalLevel,
-        ...(data.totalQuestions != null && { totalQuestions: data.totalQuestions }),
+        totalQuestions: data.totalQuestions,
         correctCount: data.correctCount,
         durationSeconds: data.durationSeconds,
       },
