@@ -1,4 +1,5 @@
 import type { Level } from './challenge-utils';
+import type { Challenge } from './challenge-types';
 
 export type ChallengeWithSource = {
   formula: string;
@@ -231,5 +232,26 @@ export const LEVEL_POOLS: LevelTemplatePool[] = [
   { level: 4, generators: [genProductSub, genProductAdd] },
   { level: 5, generators: [genTripleProduct, genTripleProductMinus, genTripleProductPlus] },
 ];
+
+/** Internal levels 1-11 for adaptive formula mode. Each level maps to one or more generators. */
+export const INTERNAL_LEVEL_POOLS: GeneratorFn[][] = [
+  [genBasicMultiplication], // 1
+  [genAddTwo], // 2
+  [genAddThree], // 3
+  [genAddFour], // 4
+  [genAddSubThree], // 5
+  [genSubAddThree], // 6
+  [genAddSubAddFour], // 7
+  [genSubAddSubFour], // 8
+  [genProductSub], // 9
+  [genProductAdd], // 10
+  [genTripleProduct, genTripleProductMinus, genTripleProductPlus], // 11
+];
+
+/** Converts ChallengeWithSource to Challenge for runtime use. */
+export function toChallenge(cws: ChallengeWithSource): Challenge {
+  const validate = new Function('return (' + cws.validateSource + ')')() as (inputs: number[]) => boolean;
+  return { formula: cws.formula, validate };
+}
 
 export { pickRandom };

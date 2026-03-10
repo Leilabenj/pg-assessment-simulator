@@ -28,14 +28,33 @@ model Session {
   userId         String?
   user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   mode           String   // "formula" | "branch"
-  score          Int      @default(0)
-  levelReached   Int      // 1-4
-  durationSeconds Int     // time spent in game
-  createdAt      DateTime @default(now())
 
-// Storing level-by-level speed and accuracy as JSON for analytics
-  analytics     Json?
+  // Aggregate Metrics (Common to all games)
+  maxInternalLevel Int           
+  totalQuestions   Int           
+  correctCount     Int           
+  durationSeconds  Int           
+  createdAt        DateTime      @default(now())
+  
+  attempts         LevelAttempt[]
 
-  @@index([userId])
-  @@index([createdAt])
+  @@index([userId, mode]) // Optimization: Query history for a specific game
+
+}
+
+model LevelAttempt {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Adaptive Context
+  sequence        Int      // 1, 2, 3...
+  difficulty      Int      // Li: The ladder rank
+  
+  // Result Data
+  isCorrect       Boolean
+  responseTimeMs  Int      
+  
+
+  @@index([sessionId])
 }

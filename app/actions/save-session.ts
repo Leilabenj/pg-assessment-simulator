@@ -2,14 +2,14 @@
 
 import { getOrCreateUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import type { Prisma } from '@/lib/generated/prisma/client';
 
 export async function saveSession(data: {
   mode: 'formula' | 'branch';
-  score: number;
-  levelReached: number;
+  maxInternalLevel: number;
+  totalQuestions: number;
+  correctCount: number;
   durationSeconds: number;
-  analytics?: Record<string, unknown> | null;
+  attempts: { sequence: number; difficulty: number; isCorrect: boolean; responseTimeMs: number }[];
 }) {
   try {
     const user = await getOrCreateUser();
@@ -18,10 +18,18 @@ export async function saveSession(data: {
       data: {
         userId: user?.id ?? null,
         mode: data.mode,
-        score: data.score,
-        levelReached: data.levelReached,
+        maxInternalLevel: data.maxInternalLevel,
+        totalQuestions: data.totalQuestions,
+        correctCount: data.correctCount,
         durationSeconds: data.durationSeconds,
-        ...(data.analytics != null && { analytics: data.analytics as Prisma.InputJsonValue }),
+        attempts: {
+          create: data.attempts.map((a) => ({
+            sequence: a.sequence,
+            difficulty: a.difficulty,
+            isCorrect: a.isCorrect,
+            responseTimeMs: a.responseTimeMs,
+          })),
+        },
       },
     });
   } catch (error) {
