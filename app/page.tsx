@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import type { Challenge } from '@/lib/challenge-types';
 import { INTERNAL_LEVEL_POOLS } from '@/lib/level-config';
 import {
@@ -328,6 +329,14 @@ export default function DigitChallenge() {
                   <p className="text-slate-400 text-sm">Identify which tube branch reordered the symbols.</p>
                 </button>
               )}
+            </div>
+            <div className="mt-6 text-center">
+              <Link
+                href="/dashboard"
+                className="text-slate-400 hover:text-blue-400 text-sm uppercase tracking-widest transition-colors"
+              >
+                View Dashboard
+              </Link>
             </div>
           </div>
         )}
