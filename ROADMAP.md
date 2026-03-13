@@ -68,7 +68,7 @@ Implement the Moving Average logic for the "Trend" pillar.
 2) The "Safe Zone" Constant:
 
 - **Tasks:**
-    - [ ] Integrate **Tremor** for UI components.
+    - [ ] Integrate **Tremor** for UI components. --> Switched to RECHARTS due to dependency issues.
     - [ ] Build a "Session Summary" screen (Radar charts for Speed vs. Accuracy).
     - [ ] Calculate "Level Progression" curves using simple linear regression logic.
 
